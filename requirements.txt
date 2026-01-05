@@ -1,0 +1,5 @@
+fastapi
+uvicorn
+python-dotenv
+sqlite3  # Built-in with Python
+aiosqlite  # For async SQLite operations
