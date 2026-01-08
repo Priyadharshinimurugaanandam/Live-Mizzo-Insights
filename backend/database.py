@@ -1,13 +1,10 @@
 import sqlite3
 import aiosqlite
-import os
 from pathlib import Path
-
-# Database path in the same directory as main.py
-DB_PATH = Path(__file__).parent / "misso.db"
+from config import DB_PATH
 
 def init_db():
-    """Initialize the SQLite database with the surgeries table"""
+    """Initialize the SQLite database"""
     conn = sqlite3.connect(DB_PATH)
     cursor = conn.cursor()
     
@@ -19,13 +16,12 @@ def init_db():
             time TEXT NOT NULL,
             duration INTEGER NOT NULL,
             surgeon_name TEXT NOT NULL,
-            surgeon_image TEXT,
+            patient_info TEXT,
             instruments_names TEXT,
-            instruments TEXT,
             instruments_durations TEXT,
-            clutch_names TEXT,
-            clutch_counts TEXT,
-            created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
+            clutch_count INTEGER DEFAULT 0,
+            created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+            is_live INTEGER DEFAULT 0
         )
     """)
     

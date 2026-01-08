@@ -9,12 +9,12 @@ const Header: React.FC = () => {
       <div className="flex items-center h-full px-6">
         <img 
           src="public/placeholder.png" 
-          alt="MISSO System Insights Logo" 
+          alt="MIZZO System Insights Logo" 
           className="w-8 h-8 mr-3"
           onError={(e) => (e.currentTarget.src = 'public/Image.png')}
         />
         <h1 className="text-2xl font-bold text-[#00938e] dark:text-[#00a8a1] uppercase tracking-wide">
-          MISSO SYSTEM INSIGHTS
+          MIZZO SYSTEM INSIGHTS
         </h1>
         <div className="ml-auto flex items-center space-x-4">
           <DarkModeToggle />

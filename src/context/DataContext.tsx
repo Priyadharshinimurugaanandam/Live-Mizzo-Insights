@@ -1,19 +1,18 @@
-import React, { createContext, useContext, useState, useEffect } from 'react';
+import React, { createContext, useContext, useState, useEffect, useCallback } from 'react';
 import axios from 'axios';
 import type { ProcessedSurgery, SurgicalData } from '../types/index';
+import { useWebSocket } from '../hooks/useWebSocket';
 
-// Define the context type
 interface DataContextType {
   surgeries: ProcessedSurgery[];
-  setSurgeries: React.Dispatch<React.SetStateAction<ProcessedSurgery[]>>;
   filteredSurgeries: ProcessedSurgery[];
   uniqueProcedures: string[];
-  uniqueSurgeons: string[];
+  surgeonName: string;
   hasData: boolean;
   isLoading: boolean;
-  setIsLoading: React.Dispatch<React.SetStateAction<boolean>>;
-  filters: { procedure: string; surgeon: string };
-  setFilters: React.Dispatch<React.SetStateAction<{ procedure: string; surgeon: string }>>;
+  liveSurgery: ProcessedSurgery | null;
+  filters: { procedure: string };
+  setFilters: React.Dispatch<React.SetStateAction<{ procedure: string }>>;
   fetchData: () => Promise<void>;
 }
 
@@ -21,14 +20,12 @@ const DataContext = createContext<DataContextType | undefined>(undefined);
 
 export const useData = () => {
   const context = useContext(DataContext);
-  if (!context) {
-    throw new Error('useData must be used within a DataProvider');
-  }
+  if (!context) throw new Error('useData must be used within a DataProvider');
   return context;
 };
 
-// API base URL
 const API_BASE_URL = 'http://127.0.0.1:8001';
+const WS_URL = 'ws://127.0.0.1:8001/ws';
 
 export const processSurgicalData = (data: SurgicalData[]): ProcessedSurgery[] => {
   return data.map((item) => {
@@ -36,20 +33,9 @@ export const processSurgicalData = (data: SurgicalData[]): ProcessedSurgery[] =>
       ? item.instruments_names.split(',').map((name: string, index: number) => ({
           name: name.trim(),
           duration: item.instruments_durations
-            ? parseInt(item.instruments_durations.split(',')[index], 10) || 0
+            ? parseFloat(item.instruments_durations.split(',')[index]) || 0
             : 0,
-          image: item.instruments_images
-            ? item.instruments_images.split(',')[index]?.trim() || null
-            : null,
-        }))
-      : [];
-
-    const clutches = item.clutch_names
-      ? item.clutch_names.split(',').map((name: string, index: number) => ({
-          name: name.trim(),
-          count: item.clutch_counts
-            ? parseInt(item.clutch_counts.split(',')[index], 10) || 0
-            : 0,
+          image: null,
         }))
       : [];
 
@@ -59,7 +45,7 @@ export const processSurgicalData = (data: SurgicalData[]): ProcessedSurgery[] =>
       ...item,
       duration: typeof item.duration === 'string' ? parseInt(item.duration, 10) : item.duration,
       instruments,
-      clutches,
+      clutches: [],
       datetime,
     };
   });
@@ -68,53 +54,77 @@ export const processSurgicalData = (data: SurgicalData[]): ProcessedSurgery[] =>
 export const DataProvider: React.FC<{ children: React.ReactNode }> = ({ children }) => {
   const [surgeries, setSurgeries] = useState<ProcessedSurgery[]>([]);
   const [isLoading, setIsLoading] = useState(false);
-  const [filters, setFilters] = useState({ procedure: '', surgeon: '' });
+  const [filters, setFilters] = useState({ procedure: '' });
+  const [surgeonName, setSurgeonName] = useState('');
+  const [liveSurgery, setLiveSurgery] = useState<ProcessedSurgery | null>(null);
 
-  // Compute filtered surgeries
   const filteredSurgeries = surgeries.filter((surgery) =>
-    (filters.procedure ? surgery.procedure_name.toLowerCase().includes(filters.procedure.toLowerCase()) : true) &&
-    (filters.surgeon ? surgery.surgeon_name.toLowerCase().includes(filters.surgeon.toLowerCase()) : true)
+    filters.procedure ? surgery.procedure_name.toLowerCase().includes(filters.procedure.toLowerCase()) : true
   );
 
-  // Compute unique procedures and surgeons
   const uniqueProcedures = Array.from(new Set(surgeries.map((surgery) => surgery.procedure_name))).sort();
-  const uniqueSurgeons = Array.from(new Set(surgeries.map((surgery) => surgery.surgeon_name))).sort();
-
-  // Track if data exists
   const hasData = surgeries.length > 0;
 
-  // Fetch data from local SQLite backend
-  const fetchData = async () => {
+  const fetchData = useCallback(async () => {
     setIsLoading(true);
     try {
-      console.log('Fetching data from local SQLite database...');
-      const response = await axios.get(`${API_BASE_URL}/surgeries`);
-      const processedData = processSurgicalData(response.data || []);
-      console.log('Processed data:', processedData);
+      const [surgeriesRes, configRes] = await Promise.all([
+        axios.get(`${API_BASE_URL}/surgeries`),
+        axios.get(`${API_BASE_URL}/config`)
+      ]);
+      
+      const processedData = processSurgicalData(surgeriesRes.data || []);
       setSurgeries(processedData);
+      setSurgeonName(configRes.data.surgeon_name);
+      
+      const live = processedData.find((s: any) => s.is_live === 1);
+      setLiveSurgery(live || null);
     } catch (error) {
       console.error('Fetch error:', error);
     } finally {
       setIsLoading(false);
     }
-  };
+  }, []);
 
-  // Fetch data on mount
+  const handleWebSocketMessage = useCallback((data: any) => {
+    console.log('📨 WebSocket message:', data);
+    
+    if (data.type === 'surgery_update') {
+      const processed = processSurgicalData([{
+        ...data.surgery,
+        instruments_names: Object.keys(data.surgery.instruments).join(','),
+        instruments_durations: Object.values(data.surgery.instruments).map((i: any) => i.duration).join(','),
+        is_live: 1
+      }])[0];
+      
+      setLiveSurgery(processed);
+      
+      setSurgeries(prev => {
+        const filtered = prev.filter((s: any) => s.is_live !== 1);
+        return [processed, ...filtered];
+      });
+    } else if (data.type === 'surgery_complete') {
+      setLiveSurgery(null);
+      fetchData();
+    }
+  }, [fetchData]);
+
+  useWebSocket(WS_URL, handleWebSocketMessage);
+
   useEffect(() => {
     fetchData();
-  }, []);
+  }, [fetchData]);
 
   return (
     <DataContext.Provider
       value={{
         surgeries,
-        setSurgeries,
         filteredSurgeries,
         uniqueProcedures,
-        uniqueSurgeons,
+        surgeonName,
         hasData,
         isLoading,
-        setIsLoading,
+        liveSurgery,
         filters,
         setFilters,
         fetchData,
