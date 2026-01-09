@@ -6,13 +6,12 @@ import { useWebSocket } from '../hooks/useWebSocket';
 interface DataContextType {
   surgeries: ProcessedSurgery[];
   filteredSurgeries: ProcessedSurgery[];
-  uniqueProcedures: string[];
   surgeonName: string;
   hasData: boolean;
   isLoading: boolean;
   liveSurgery: ProcessedSurgery | null;
-  filters: { procedure: string };
-  setFilters: React.Dispatch<React.SetStateAction<{ procedure: string }>>;
+  selectedHistorySurgery: ProcessedSurgery | null;
+  setSelectedHistorySurgery: React.Dispatch<React.SetStateAction<ProcessedSurgery | null>>;
   fetchData: () => Promise<void>;
 }
 
@@ -54,46 +53,62 @@ export const processSurgicalData = (data: SurgicalData[]): ProcessedSurgery[] =>
 export const DataProvider: React.FC<{ children: React.ReactNode }> = ({ children }) => {
   const [surgeries, setSurgeries] = useState<ProcessedSurgery[]>([]);
   const [isLoading, setIsLoading] = useState(false);
-  const [filters, setFilters] = useState({ procedure: '' });
   const [surgeonName, setSurgeonName] = useState('');
   const [liveSurgery, setLiveSurgery] = useState<ProcessedSurgery | null>(null);
+  const [selectedHistorySurgery, setSelectedHistorySurgery] = useState<ProcessedSurgery | null>(null);
 
-  const filteredSurgeries = surgeries.filter((surgery) =>
-    filters.procedure ? surgery.procedure_name.toLowerCase().includes(filters.procedure.toLowerCase()) : true
-  );
+  const filteredSurgeries = surgeries;
 
-  const uniqueProcedures = Array.from(new Set(surgeries.map((surgery) => surgery.procedure_name))).sort();
   const hasData = surgeries.length > 0;
 
-  const fetchData = useCallback(async () => {
+  const fetchData = useCallback(async (specificSurgeon?: string) => {
     setIsLoading(true);
     try {
-      const [surgeriesRes, configRes] = await Promise.all([
-        axios.get(`${API_BASE_URL}/surgeries`),
-        axios.get(`${API_BASE_URL}/config`)
-      ]);
+      const surgeon = specificSurgeon || surgeonName;
+      
+      if (!surgeon) {
+        console.log('No surgeon name available yet');
+        setIsLoading(false);
+        return;
+      }
+      
+      console.log(`Fetching surgeries for: ${surgeon}`);
+      const surgeriesRes = await axios.get(`${API_BASE_URL}/surgeries/${surgeon}`);
       
       const processedData = processSurgicalData(surgeriesRes.data || []);
       setSurgeries(processedData);
-      setSurgeonName(configRes.data.surgeon_name);
       
       const live = processedData.find((s: any) => s.is_live === 1);
       setLiveSurgery(live || null);
+      
+      console.log(`Loaded ${processedData.length} surgeries, live: ${live ? 'Yes' : 'No'}`);
     } catch (error) {
       console.error('Fetch error:', error);
     } finally {
       setIsLoading(false);
     }
-  }, []);
+  }, [surgeonName]);
 
   const handleWebSocketMessage = useCallback((data: any) => {
     console.log('📨 WebSocket message:', data);
     
+    const surgeryData = data.surgery;
+    const messageSurgeon = data.surgeon_name || surgeryData.surgeon_name;
+    
+    if (!surgeonName) {
+      setSurgeonName(messageSurgeon);
+    }
+    
+    if (surgeonName && messageSurgeon !== surgeonName) {
+      console.log(`Ignoring update for different surgeon: ${messageSurgeon}`);
+      return;
+    }
+    
     if (data.type === 'surgery_update') {
       const processed = processSurgicalData([{
-        ...data.surgery,
-        instruments_names: Object.keys(data.surgery.instruments).join(','),
-        instruments_durations: Object.values(data.surgery.instruments).map((i: any) => i.duration).join(','),
+        ...surgeryData,
+        instruments_names: Object.keys(surgeryData.instruments).join(','),
+        instruments_durations: Object.values(surgeryData.instruments).map((i: any) => i.duration).join(','),
         is_live: 1
       }])[0];
       
@@ -105,28 +120,29 @@ export const DataProvider: React.FC<{ children: React.ReactNode }> = ({ children
       });
     } else if (data.type === 'surgery_complete') {
       setLiveSurgery(null);
-      fetchData();
+      fetchData(messageSurgeon);
     }
-  }, [fetchData]);
+  }, [fetchData, surgeonName]);
 
   useWebSocket(WS_URL, handleWebSocketMessage);
 
   useEffect(() => {
-    fetchData();
-  }, [fetchData]);
+    if (surgeonName) {
+      fetchData();
+    }
+  }, [surgeonName]);
 
   return (
     <DataContext.Provider
       value={{
         surgeries,
         filteredSurgeries,
-        uniqueProcedures,
         surgeonName,
         hasData,
         isLoading,
         liveSurgery,
-        filters,
-        setFilters,
+        selectedHistorySurgery,
+        setSelectedHistorySurgery,
         fetchData,
       }}
     >

@@ -215,7 +215,7 @@ def simulate_live_surgery():
     print("🎉 SURGERY COMPLETED!")
     print("="*60)
     print(f"Total Events: {len(events)}")
-    print(f"Duration: {SURGERY_DURATION_MINUTES} minutes")
+
     print(f"Clutch Presses: {clutch_count}")
     print(f"Instruments: {len(instruments_added)}")
     print(f"File: {OUTPUT_FILE}")

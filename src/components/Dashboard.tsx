@@ -1,10 +1,9 @@
 import React from 'react';
 import { useData } from '../context/DataContext';
 import DefaultView from '../views/DefaultView';
-import ProcedureView from '../views/ProcedureView';
 
 const Dashboard: React.FC = () => {
-  const { filters, hasData, isLoading, surgeonName } = useData();
+  const { hasData, isLoading, surgeonName } = useData();
 
   if (isLoading) {
     return (
@@ -15,12 +14,12 @@ const Dashboard: React.FC = () => {
     );
   }
 
-  if (!hasData) {
+  if (!hasData && !surgeonName) {
     return (
       <div className="flex flex-col items-center justify-center h-[calc(100vh-4rem)]">
         <img src="/logo.png" alt="MISSO Logo" className="w-50 h-40 mb-10" />
         <p className="text-lg text-gray-600 dark:text-gray-400">
-          Waiting for surgery data from {surgeonName}...
+          Waiting for surgery data...
         </p>
         <p className="text-sm text-gray-500 dark:text-gray-500 mt-2">
           JSON files will be automatically detected
@@ -31,7 +30,7 @@ const Dashboard: React.FC = () => {
 
   return (
     <div className="p-6">
-      {filters.procedure ? <ProcedureView /> : <DefaultView />}
+      <DefaultView />
     </div>
   );
 };

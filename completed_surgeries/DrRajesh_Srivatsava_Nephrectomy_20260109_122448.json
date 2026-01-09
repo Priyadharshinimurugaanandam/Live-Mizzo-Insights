@@ -1,0 +1,552 @@
+[
+  {
+    "time": "2026-01-09T12:22:03.071200",
+    "event": "Surgery type selected",
+    "value": "Nephrectomy"
+  },
+  {
+    "time": "2026-01-09T12:22:03.071200",
+    "event": "Surgeon Name",
+    "value": "Dr.Rajesh Srivatsava"
+  },
+  {
+    "time": "2026-01-09T12:22:13.071200",
+    "event": "Patient Info",
+    "value": "Name: Patient_68, Age: 65, BMI: 23.2"
+  },
+  {
+    "time": "2026-01-09T12:22:23.071200",
+    "event": "Surgery started",
+    "value": "2026-01-09 12:22:03"
+  },
+  {
+    "time": "2026-01-09T12:24:03.071200",
+    "event": "PrimaryLeft Instrument Name",
+    "value": "Monopolar_Cautery_Hook"
+  },
+  {
+    "time": "2026-01-09T12:24:03.071200",
+    "event": "PrimaryLeft Instrument Count is ",
+    "value": "1"
+  },
+  {
+    "time": "2026-01-09T12:24:03.071200",
+    "event": "PrimaryLeft Instrument Connected duration is ",
+    "value": "33.963270844444445"
+  },
+  {
+    "time": "2026-01-09T12:26:03.071200",
+    "event": "Clutch Pedal Pressed",
+    "value": "1"
+  },
+  {
+    "time": "2026-01-09T12:26:03.071200",
+    "event": "Clutch Pedal Pressed",
+    "value": "2"
+  },
+  {
+    "time": "2026-01-09T12:27:03.071200",
+    "event": "Clutch Pedal Pressed",
+    "value": "3"
+  },
+  {
+    "time": "2026-01-09T12:27:03.071200",
+    "event": "Clutch Pedal Pressed",
+    "value": "4"
+  },
+  {
+    "time": "2026-01-09T12:27:03.071200",
+    "event": "Clutch Pedal Pressed",
+    "value": "5"
+  },
+  {
+    "time": "2026-01-09T12:28:03.071200",
+    "event": "Clutch Pedal Pressed",
+    "value": "6"
+  },
+  {
+    "time": "2026-01-09T12:28:03.071200",
+    "event": "Clutch Pedal Pressed",
+    "value": "7"
+  },
+  {
+    "time": "2026-01-09T12:28:03.071200",
+    "event": "Clutch Pedal Pressed",
+    "value": "8"
+  },
+  {
+    "time": "2026-01-09T12:28:03.071200",
+    "event": "PrimaryLeft Instrument Name",
+    "value": "Small_Graptor"
+  },
+  {
+    "time": "2026-01-09T12:28:03.071200",
+    "event": "PrimaryLeft Instrument Count is ",
+    "value": "1"
+  },
+  {
+    "time": "2026-01-09T12:28:03.071200",
+    "event": "PrimaryLeft Instrument Connected duration is ",
+    "value": "133.77203973333334"
+  },
+  {
+    "time": "2026-01-09T12:29:03.071200",
+    "event": "Clutch Pedal Pressed",
+    "value": "9"
+  },
+  {
+    "time": "2026-01-09T12:29:03.071200",
+    "event": "Clutch Pedal Pressed",
+    "value": "10"
+  },
+  {
+    "time": "2026-01-09T12:30:03.071200",
+    "event": "Clutch Pedal Pressed",
+    "value": "11"
+  },
+  {
+    "time": "2026-01-09T12:30:03.071200",
+    "event": "Clutch Pedal Pressed",
+    "value": "12"
+  },
+  {
+    "time": "2026-01-09T12:32:03.071200",
+    "event": "Clutch Pedal Pressed",
+    "value": "13"
+  },
+  {
+    "time": "2026-01-09T12:32:03.071200",
+    "event": "Clutch Pedal Pressed",
+    "value": "14"
+  },
+  {
+    "time": "2026-01-09T12:32:03.071200",
+    "event": "Clutch Pedal Pressed",
+    "value": "15"
+  },
+  {
+    "time": "2026-01-09T12:32:03.071200",
+    "event": "PrimaryRight Instrument Name",
+    "value": "Fenestrated_Bipolar_Forceps"
+  },
+  {
+    "time": "2026-01-09T12:32:03.071200",
+    "event": "PrimaryRight Instrument Count is ",
+    "value": "1"
+  },
+  {
+    "time": "2026-01-09T12:32:03.071200",
+    "event": "PrimaryRight Instrument Connected duration is ",
+    "value": "242.53922511111114"
+  },
+  {
+    "time": "2026-01-09T12:32:03.071200",
+    "event": "PrimaryRight Instrument Name",
+    "value": "Cobra_Grasper"
+  },
+  {
+    "time": "2026-01-09T12:32:03.071200",
+    "event": "PrimaryRight Instrument Count is ",
+    "value": "1"
+  },
+  {
+    "time": "2026-01-09T12:32:03.071200",
+    "event": "PrimaryRight Instrument Connected duration is ",
+    "value": "237.971026"
+  },
+  {
+    "time": "2026-01-09T12:32:03.071200",
+    "event": "PrimaryRight Instrument Name",
+    "value": "SynchroSeal"
+  },
+  {
+    "time": "2026-01-09T12:32:03.071200",
+    "event": "PrimaryRight Instrument Count is ",
+    "value": "1"
+  },
+  {
+    "time": "2026-01-09T12:32:03.071200",
+    "event": "PrimaryRight Instrument Connected duration is ",
+    "value": "112.9351991111111"
+  },
+  {
+    "time": "2026-01-09T12:34:03.071200",
+    "event": "Clutch Pedal Pressed",
+    "value": "16"
+  },
+  {
+    "time": "2026-01-09T12:34:03.071200",
+    "event": "Clutch Pedal Pressed",
+    "value": "17"
+  },
+  {
+    "time": "2026-01-09T12:36:03.071200",
+    "event": "Clutch Pedal Pressed",
+    "value": "18"
+  },
+  {
+    "time": "2026-01-09T12:36:03.071200",
+    "event": "Clutch Pedal Pressed",
+    "value": "19"
+  },
+  {
+    "time": "2026-01-09T12:36:03.071200",
+    "event": "Clutch Pedal Pressed",
+    "value": "20"
+  },
+  {
+    "time": "2026-01-09T12:36:03.071200",
+    "event": "Clutch Pedal Pressed",
+    "value": "21"
+  },
+  {
+    "time": "2026-01-09T12:38:03.071200",
+    "event": "Clutch Pedal Pressed",
+    "value": "22"
+  },
+  {
+    "time": "2026-01-09T12:38:03.071200",
+    "event": "Clutch Pedal Pressed",
+    "value": "23"
+  },
+  {
+    "time": "2026-01-09T12:38:03.071200",
+    "event": "Clutch Pedal Pressed",
+    "value": "24"
+  },
+  {
+    "time": "2026-01-09T12:38:03.071200",
+    "event": "Clutch Pedal Pressed",
+    "value": "25"
+  },
+  {
+    "time": "2026-01-09T12:40:03.071200",
+    "event": "Clutch Pedal Pressed",
+    "value": "26"
+  },
+  {
+    "time": "2026-01-09T12:40:03.071200",
+    "event": "Clutch Pedal Pressed",
+    "value": "27"
+  },
+  {
+    "time": "2026-01-09T12:41:03.071200",
+    "event": "Clutch Pedal Pressed",
+    "value": "28"
+  },
+  {
+    "time": "2026-01-09T12:41:03.071200",
+    "event": "Clutch Pedal Pressed",
+    "value": "29"
+  },
+  {
+    "time": "2026-01-09T12:43:03.071200",
+    "event": "Clutch Pedal Pressed",
+    "value": "30"
+  },
+  {
+    "time": "2026-01-09T12:43:03.071200",
+    "event": "Clutch Pedal Pressed",
+    "value": "31"
+  },
+  {
+    "time": "2026-01-09T12:43:03.071200",
+    "event": "Clutch Pedal Pressed",
+    "value": "32"
+  },
+  {
+    "time": "2026-01-09T12:44:03.071200",
+    "event": "Clutch Pedal Pressed",
+    "value": "33"
+  },
+  {
+    "time": "2026-01-09T12:44:03.071200",
+    "event": "Clutch Pedal Pressed",
+    "value": "34"
+  },
+  {
+    "time": "2026-01-09T12:44:03.071200",
+    "event": "Clutch Pedal Pressed",
+    "value": "35"
+  },
+  {
+    "time": "2026-01-09T12:46:03.071200",
+    "event": "Clutch Pedal Pressed",
+    "value": "36"
+  },
+  {
+    "time": "2026-01-09T12:46:03.071200",
+    "event": "Clutch Pedal Pressed",
+    "value": "37"
+  },
+  {
+    "time": "2026-01-09T12:46:03.071200",
+    "event": "Clutch Pedal Pressed",
+    "value": "38"
+  },
+  {
+    "time": "2026-01-09T12:46:03.071200",
+    "event": "Clutch Pedal Pressed",
+    "value": "39"
+  },
+  {
+    "time": "2026-01-09T12:47:03.071200",
+    "event": "Clutch Pedal Pressed",
+    "value": "40"
+  },
+  {
+    "time": "2026-01-09T12:47:03.071200",
+    "event": "Clutch Pedal Pressed",
+    "value": "41"
+  },
+  {
+    "time": "2026-01-09T12:48:03.071200",
+    "event": "Clutch Pedal Pressed",
+    "value": "42"
+  },
+  {
+    "time": "2026-01-09T12:48:03.071200",
+    "event": "Clutch Pedal Pressed",
+    "value": "43"
+  },
+  {
+    "time": "2026-01-09T12:48:03.071200",
+    "event": "Clutch Pedal Pressed",
+    "value": "44"
+  },
+  {
+    "time": "2026-01-09T12:48:03.071200",
+    "event": "Clutch Pedal Pressed",
+    "value": "45"
+  },
+  {
+    "time": "2026-01-09T12:49:03.071200",
+    "event": "Clutch Pedal Pressed",
+    "value": "46"
+  },
+  {
+    "time": "2026-01-09T12:49:03.071200",
+    "event": "Clutch Pedal Pressed",
+    "value": "47"
+  },
+  {
+    "time": "2026-01-09T12:49:03.071200",
+    "event": "Clutch Pedal Pressed",
+    "value": "48"
+  },
+  {
+    "time": "2026-01-09T12:49:03.071200",
+    "event": "Clutch Pedal Pressed",
+    "value": "49"
+  },
+  {
+    "time": "2026-01-09T12:51:03.071200",
+    "event": "Clutch Pedal Pressed",
+    "value": "50"
+  },
+  {
+    "time": "2026-01-09T12:51:03.071200",
+    "event": "Clutch Pedal Pressed",
+    "value": "51"
+  },
+  {
+    "time": "2026-01-09T12:51:03.071200",
+    "event": "Clutch Pedal Pressed",
+    "value": "52"
+  },
+  {
+    "time": "2026-01-09T12:52:03.071200",
+    "event": "Clutch Pedal Pressed",
+    "value": "53"
+  },
+  {
+    "time": "2026-01-09T12:52:03.071200",
+    "event": "Clutch Pedal Pressed",
+    "value": "54"
+  },
+  {
+    "time": "2026-01-09T12:53:03.071200",
+    "event": "Clutch Pedal Pressed",
+    "value": "55"
+  },
+  {
+    "time": "2026-01-09T12:53:03.071200",
+    "event": "Clutch Pedal Pressed",
+    "value": "56"
+  },
+  {
+    "time": "2026-01-09T12:54:03.071200",
+    "event": "Clutch Pedal Pressed",
+    "value": "57"
+  },
+  {
+    "time": "2026-01-09T12:56:03.071200",
+    "event": "Clutch Pedal Pressed",
+    "value": "58"
+  },
+  {
+    "time": "2026-01-09T12:56:03.071200",
+    "event": "Clutch Pedal Pressed",
+    "value": "59"
+  },
+  {
+    "time": "2026-01-09T12:56:03.071200",
+    "event": "Clutch Pedal Pressed",
+    "value": "60"
+  },
+  {
+    "time": "2026-01-09T12:57:03.071200",
+    "event": "Clutch Pedal Pressed",
+    "value": "61"
+  },
+  {
+    "time": "2026-01-09T12:57:03.071200",
+    "event": "Clutch Pedal Pressed",
+    "value": "62"
+  },
+  {
+    "time": "2026-01-09T12:57:03.071200",
+    "event": "Clutch Pedal Pressed",
+    "value": "63"
+  },
+  {
+    "time": "2026-01-09T12:57:03.071200",
+    "event": "Clutch Pedal Pressed",
+    "value": "64"
+  },
+  {
+    "time": "2026-01-09T12:57:03.071200",
+    "event": "Clutch Pedal Pressed",
+    "value": "65"
+  },
+  {
+    "time": "2026-01-09T12:57:03.071200",
+    "event": "Clutch Pedal Pressed",
+    "value": "66"
+  },
+  {
+    "time": "2026-01-09T12:59:03.071200",
+    "event": "Clutch Pedal Pressed",
+    "value": "67"
+  },
+  {
+    "time": "2026-01-09T12:59:03.071200",
+    "event": "Clutch Pedal Pressed",
+    "value": "68"
+  },
+  {
+    "time": "2026-01-09T13:00:03.071200",
+    "event": "Clutch Pedal Pressed",
+    "value": "69"
+  },
+  {
+    "time": "2026-01-09T13:00:03.071200",
+    "event": "Clutch Pedal Pressed",
+    "value": "70"
+  },
+  {
+    "time": "2026-01-09T13:00:03.071200",
+    "event": "Clutch Pedal Pressed",
+    "value": "71"
+  },
+  {
+    "time": "2026-01-09T13:00:03.071200",
+    "event": "Clutch Pedal Pressed",
+    "value": "72"
+  },
+  {
+    "time": "2026-01-09T13:01:03.071200",
+    "event": "Clutch Pedal Pressed",
+    "value": "73"
+  },
+  {
+    "time": "2026-01-09T13:01:03.071200",
+    "event": "Clutch Pedal Pressed",
+    "value": "74"
+  },
+  {
+    "time": "2026-01-09T13:01:03.071200",
+    "event": "Clutch Pedal Pressed",
+    "value": "75"
+  },
+  {
+    "time": "2026-01-09T13:01:03.071200",
+    "event": "Clutch Pedal Pressed",
+    "value": "76"
+  },
+  {
+    "time": "2026-01-09T13:02:03.071200",
+    "event": "Clutch Pedal Pressed",
+    "value": "77"
+  },
+  {
+    "time": "2026-01-09T13:04:03.071200",
+    "event": "Clutch Pedal Pressed",
+    "value": "78"
+  },
+  {
+    "time": "2026-01-09T13:04:03.071200",
+    "event": "Clutch Pedal Pressed",
+    "value": "79"
+  },
+  {
+    "time": "2026-01-09T13:04:03.071200",
+    "event": "Clutch Pedal Pressed",
+    "value": "80"
+  },
+  {
+    "time": "2026-01-09T13:06:03.071200",
+    "event": "Clutch Pedal Pressed",
+    "value": "81"
+  },
+  {
+    "time": "2026-01-09T13:07:03.071200",
+    "event": "Clutch Pedal Pressed",
+    "value": "82"
+  },
+  {
+    "time": "2026-01-09T13:07:03.071200",
+    "event": "Clutch Pedal Pressed",
+    "value": "83"
+  },
+  {
+    "time": "2026-01-09T13:07:03.071200",
+    "event": "Clutch Pedal Pressed",
+    "value": "84"
+  },
+  {
+    "time": "2026-01-09T13:07:03.071200",
+    "event": "PrimaryLeft Instrument Connected duration is ",
+    "value": "764.173594"
+  },
+  {
+    "time": "2026-01-09T13:07:03.071200",
+    "event": "PrimaryLeft Instrument Connected duration is ",
+    "value": "1003.290298"
+  },
+  {
+    "time": "2026-01-09T13:07:03.071200",
+    "event": "PrimaryRight Instrument Connected duration is ",
+    "value": "1091.426513"
+  },
+  {
+    "time": "2026-01-09T13:07:03.071200",
+    "event": "PrimaryRight Instrument Connected duration is ",
+    "value": "1070.869617"
+  },
+  {
+    "time": "2026-01-09T13:07:03.071200",
+    "event": "PrimaryRight Instrument Connected duration is ",
+    "value": "508.208396"
+  },
+  {
+    "time": "2026-01-09T13:07:03.071200",
+    "event": "Surgery stopped",
+    "value": "2026-01-09 13:07:03"
+  },
+  {
+    "time": "2026-01-09T13:07:03.071200",
+    "event": "Surgery duration",
+    "value": "0:45:00"
+  }
+]

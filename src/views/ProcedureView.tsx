@@ -1,107 +1,24 @@
 import React from 'react';
 import { useData } from '../context/DataContext';
-import ProgressBar from '../components/ProgressBar';
-import Image from '../components/Image';
 
 const ProcedureView: React.FC = () => {
-  const { filteredSurgeries, filters, hasData } = useData();
+  const { hasData } = useData();
 
-  if (!hasData || filteredSurgeries.length === 0) {
+  if (!hasData) {
     return (
       <div className="text-center py-12">
-        <p className="text-gray-600">No data available for {filters.procedure}.</p>
+        <p className="text-gray-600 dark:text-gray-300">
+          No procedure data available.
+        </p>
       </div>
     );
   }
 
-  const totalCases = filteredSurgeries.length;
-  const averageTime = Math.round(
-    filteredSurgeries.reduce((sum, surgery) => sum + surgery.duration, 0) / totalCases
-  );
-
-  const instrumentStats = filteredSurgeries.reduce((acc, surgery) => {
-    surgery.instruments.forEach(instrument => {
-      if (!acc[instrument.name]) {
-        acc[instrument.name] = {
-          name: instrument.name,
-          totalDuration: 0,
-          count: 0,
-        };
-      }
-      acc[instrument.name].totalDuration += instrument.duration;
-      acc[instrument.name].count += 1;
-    });
-    return acc;
-  }, {} as Record<string, { name: string; totalDuration: number; count: number }>);
-
-  const instruments = Object.values(instrumentStats).map(stat => ({
-    name: stat.name,
-    averageDuration: Math.round(stat.totalDuration / stat.count),
-    count: stat.count,
-    usageRate: stat.count / totalCases,
-  }));
-
-  const totalConsoleTime = filteredSurgeries.reduce(
-    (sum, surgery) => sum + surgery.duration,
-    0
-  );
-
   return (
-    <div className="grid grid-cols-1 lg:grid-cols-12 gap-6 h-full">
-      <div className="lg:col-span-3">
-        <div className="bg-white border-2 border-[#00938e] rounded-lg p-6 shadow-sm min-h-[400px]">
-          <div className="space-y-6">
-            <div>
-              <p className="text-xs text-[#00938e] uppercase tracking-wide font-semibold">Procedure</p>
-              <p className="text-xl font-bold text-[#00938e]">{filters.procedure}</p>
-            </div>
-            <div>
-              <p className="text-xs text-[#00938e] uppercase tracking-wide font-semibold">Total Cases</p>
-              <p className="text-3xl font-bold text-[#00938e]">{totalCases}</p>
-            </div>
-            <div>
-              <p className="text-xs text-[#00938e] uppercase tracking-wide font-semibold">Average Time</p>
-              <p className="text-3xl font-bold text-[#00938e]">{averageTime} min</p>
-            </div>
-          </div>
-        </div>
-      </div>
-
-      <div className="lg:col-span-4">
-        <div className="bg-white border-2 border-[#00938e] rounded-lg p-6 shadow-sm min-h-[400px]">
-          <h3 className="text-lg font-semibold text-[#00938e] mb-4 uppercase tracking-wide">
-            Instrument Usage
-          </h3>
-          <div className="space-y-4">
-            {instruments.length > 0 ? (
-              instruments.map((instrument, index) => {
-                const percentage = Math.round(
-                  (instrument.averageDuration / totalConsoleTime) * 100 * totalCases
-                );
-                return (
-                  <div key={index} className="flex items-center gap-4">
-                    <Image
-                      type="instrument"
-                      name={instrument.name}
-                      className="w-10 h-10 rounded object-cover"
-                    />
-                    <div className="flex-1">
-                      <p className="text-sm font-medium mb-1">{instrument.name}</p>
-                      <ProgressBar
-                        percentage={percentage}
-                        duration={instrument.averageDuration}
-                        size="sm"
-                      />
-                    </div>
-                  </div>
-                );
-              })
-            ) : (
-              <p className="text-sm text-gray-600">No instruments used.</p>
-            )}
-          </div>
-        </div>
-      </div>
+    <div className="text-center py-12">
+      <p className="text-gray-600 dark:text-gray-300">
+        Procedure view - Not in use
+      </p>
     </div>
   );
 };
