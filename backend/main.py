@@ -13,11 +13,12 @@ from fastapi.middleware.cors import CORSMiddleware
 from watchdog.observers import Observer
 from watchdog.events import FileSystemEventHandler
 
+# Assuming these exist in your project
 from database import init_db, get_db
 from config import WATCH_FOLDER, HOST, PORT
 
 # ========================================
-# LOGGER + DATABASE
+# LOGGER + DATABASE + ARCHIVE
 # ========================================
 logging.basicConfig(
     level=logging.INFO,
@@ -26,7 +27,6 @@ logging.basicConfig(
 logger = logging.getLogger(__name__)
 init_db()
 
-# Create archive folder for completed surgeries
 ARCHIVE_FOLDER = WATCH_FOLDER.parent / "completed_surgeries"
 ARCHIVE_FOLDER.mkdir(exist_ok=True)
 
@@ -55,24 +55,29 @@ class ConnectionManager:
         logger.info(f"✅ WebSocket connected. Total: {len(self.active_connections)}")
 
     def disconnect(self, websocket: WebSocket):
-        self.active_connections.remove(websocket)
+        if websocket in self.active_connections:
+            self.active_connections.remove(websocket)
         logger.info(f"❌ WebSocket disconnected. Total: {len(self.active_connections)}")
 
     async def broadcast(self, message: dict):
-        logger.info(f"📡 Broadcasting to {len(self.active_connections)} clients")
+        logger.info(f"📡 Broadcasting ({message.get('type')}) to {len(self.active_connections)} clients")
+        disconnected = []
         for connection in self.active_connections:
             try:
                 await connection.send_json(message)
             except Exception as e:
-                logger.error(f"Error broadcasting: {e}")
+                logger.error(f"Broadcast error: {e}")
+                disconnected.append(connection)
+        for dc in disconnected:
+            self.disconnect(dc)
 
 manager = ConnectionManager()
 
 # ========================================
-# JSON PARSER - CALCULATE DURATION FROM EVENTS
+# JSON PARSER
 # ========================================
 def parse_surgery_json(data: List[Dict[str, Any]]) -> Dict[str, Any]:
-    """Parse surgery JSON events and calculate duration from start/stop times"""
+    """Parse surgery events and detect end status"""
     surgery = {
         "procedure_name": "",
         "date": "",
@@ -82,103 +87,107 @@ def parse_surgery_json(data: List[Dict[str, Any]]) -> Dict[str, Any]:
         "patient_info": "",
         "instruments": {},
         "clutch_count": 0,
+        "is_ended": False,
+        "end_timestamp": None,
     }
 
     start_time = None
-    stop_time = None
     current_instrument = None
 
     for event in data:
         if not isinstance(event, dict):
             continue
-        
+
         event_type = event.get("event", "")
         value = event.get("value", "")
+        event_time_str = event.get("time")
 
-        try:
-            if event_type == "Surgery type selected":
-                surgery["procedure_name"] = str(value)
-            
-            elif event_type == "Surgeon Name":
-                surgery["surgeon_name"] = str(value)
-            
-            elif event_type == "Patient Info":
-                surgery["patient_info"] = str(value)
-            
-            elif event_type == "Surgery started":
-                try:
-                    dt = datetime.strptime(value, "%Y-%m-%d %H:%M:%S")
-                    surgery["date"] = dt.strftime("%Y-%m-%d")
-                    surgery["time"] = dt.strftime("%H:%M")
-                    start_time = dt
-                except Exception as e:
-                    logger.error(f"Error parsing start time: {e}")
-            
-            elif event_type == "Surgery stopped":
-                try:
-                    stop_time = datetime.strptime(value, "%Y-%m-%d %H:%M:%S")
-                    if start_time and stop_time:
-                        surgery["duration"] = int((stop_time - start_time).total_seconds() / 60)
-                except Exception as e:
-                    logger.error(f"Error parsing stop time: {e}")
-            
-            elif event_type == "Surgery duration":
-                if surgery["duration"] == 0:
-                    try:
-                        parts = value.split(":")
-                        h, m = int(parts[0]), int(parts[1])
-                        surgery["duration"] = h * 60 + m
-                    except Exception as e:
-                        logger.error(f"Error parsing duration: {e}")
-            
-            elif event_type == "Clutch Pedal Pressed":
-                surgery["clutch_count"] += 1
-            
-            elif "Instrument Name" in event_type:
-                current_instrument = str(value)
-                if current_instrument not in surgery["instruments"]:
-                    surgery["instruments"][current_instrument] = {
-                        "duration": 0,
-                        "count": 0
-                    }
-            
-            elif "Instrument Connected duration is" in event_type and current_instrument:
-                try:
-                    duration_seconds = float(value)
-                    surgery["instruments"][current_instrument]["duration"] = round(duration_seconds / 60, 2)
-                except Exception as e:
-                    logger.error(f"Error parsing instrument duration: {e}")
-            
-            elif "Instrument Count is" in event_type and current_instrument:
-                try:
-                    surgery["instruments"][current_instrument]["count"] = int(value)
-                except Exception as e:
-                    logger.error(f"Error parsing instrument count: {e}")
-
-        except Exception as e:
-            logger.warning(f"Parse error: {e}")
+        # ─── Detect final log marker ───
+        if event_type == "Log file ended" and value == "Now":
+            surgery["is_ended"] = True
+            try:
+                surgery["end_timestamp"] = datetime.fromisoformat(event_time_str)
+            except:
+                surgery["end_timestamp"] = datetime.now()
             continue
 
-    # Calculate duration from current time if surgery is ongoing
-    if start_time and not stop_time:
-        current_duration = int((datetime.now() - start_time).total_seconds() / 60)
-        surgery["duration"] = max(current_duration, 0)
+        if event_type == "Surgery type selected":
+            surgery["procedure_name"] = str(value)
+
+        elif event_type == "Surgeon Name":
+            surgery["surgeon_name"] = str(value)
+
+        elif event_type == "Patient Info":
+            surgery["patient_info"] = str(value)
+
+        elif event_type == "Surgery started":
+            try:
+                dt = datetime.strptime(value, "%Y-%m-%d %H:%M:%S")
+                surgery["date"] = dt.strftime("%Y-%m-%d")
+                surgery["time"] = dt.strftime("%H:%M")
+                start_time = dt
+            except Exception as e:
+                logger.error(f"Start time parse error: {e}")
+
+        elif event_type == "Surgery stopped":
+            try:
+                stop_time = datetime.strptime(value, "%Y-%m-%d %H:%M:%S")
+                if start_time:
+                    surgery["duration"] = int((stop_time - start_time).total_seconds() / 60)
+                    surgery["is_ended"] = True
+                    surgery["end_timestamp"] = stop_time
+            except Exception as e:
+                logger.error(f"Stop time parse error: {e}")
+
+        elif event_type == "Surgery duration" and surgery["duration"] == 0:
+            try:
+                h, m, _ = map(int, value.split(":"))
+                surgery["duration"] = h * 60 + m
+            except:
+                pass
+
+        elif event_type == "Clutch Pedal Pressed":
+            surgery["clutch_count"] += 1
+
+        elif "Instrument Name" in event_type:
+            current_instrument = str(value)
+            if current_instrument not in surgery["instruments"]:
+                surgery["instruments"][current_instrument] = {"duration": 0, "count": 0}
+
+        elif "Instrument Connected duration is" in event_type and current_instrument:
+            try:
+                sec = float(value)
+                surgery["instruments"][current_instrument]["duration"] = round(sec / 60, 2)
+            except:
+                pass
+
+        elif "Instrument Count is" in event_type and current_instrument:
+            try:
+                surgery["instruments"][current_instrument]["count"] = int(value)
+            except:
+                pass
+
+    # Final duration calculation
+    if surgery["is_ended"] and start_time and surgery["end_timestamp"]:
+        surgery["duration"] = max(0, int((surgery["end_timestamp"] - start_time).total_seconds() / 60))
+    elif start_time and not surgery["is_ended"]:
+        surgery["duration"] = max(0, int((datetime.now() - start_time).total_seconds() / 60))
 
     return surgery
 
 # ========================================
-# DATABASE OPERATIONS
+# DATABASE & ARCHIVE HELPERS
 # ========================================
-async def save_surgery(surgery: dict, is_live: bool = False):
-    """Save or update surgery in database"""
+async def save_surgery(surgery: dict, is_live: bool = False) -> int | None:
     db = await get_db()
-    
+
     instruments_names = ",".join(surgery["instruments"].keys())
-    instruments_durations = ",".join([
-        str(inst["duration"]) for inst in surgery["instruments"].values()
-    ])
+    instruments_durations = ",".join(
+        str(round(v["duration"], 2)) for v in surgery["instruments"].values()
+    )
 
     try:
+        # Check for existing live surgery by surgeon
         cursor = await db.execute(
             "SELECT id FROM surgeries WHERE is_live = 1 AND surgeon_name = ?",
             (surgery["surgeon_name"],)
@@ -186,31 +195,22 @@ async def save_surgery(surgery: dict, is_live: bool = False):
         existing = await cursor.fetchone()
 
         if existing and is_live:
+            # Update existing live record
             await db.execute("""
                 UPDATE surgeries SET
-                    procedure_name = ?,
-                    date = ?,
-                    time = ?,
-                    duration = ?,
-                    patient_info = ?,
-                    instruments_names = ?,
-                    instruments_durations = ?,
-                    clutch_count = ?
+                    procedure_name = ?, date = ?, time = ?, duration = ?,
+                    patient_info = ?, instruments_names = ?, instruments_durations = ?,
+                    clutch_count = ?, is_live = 1
                 WHERE id = ?
             """, (
-                surgery["procedure_name"],
-                surgery["date"],
-                surgery["time"],
-                surgery["duration"],
-                surgery["patient_info"],
-                instruments_names,
-                instruments_durations,
-                surgery["clutch_count"],
-                existing[0]
+                surgery["procedure_name"], surgery["date"], surgery["time"], surgery["duration"],
+                surgery["patient_info"], instruments_names, instruments_durations,
+                surgery["clutch_count"], existing[0]
             ))
             surgery_id = existing[0]
-            logger.info(f"🔄 Updated live surgery ID={surgery_id}, duration={surgery['duration']} min")
+            logger.info(f"Updated live surgery {surgery_id} – {surgery['duration']} min")
         else:
+            # Insert new record
             cursor = await db.execute("""
                 INSERT INTO surgeries (
                     procedure_name, date, time, duration, surgeon_name,
@@ -218,272 +218,235 @@ async def save_surgery(surgery: dict, is_live: bool = False):
                     clutch_count, is_live
                 ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
             """, (
-                surgery["procedure_name"],
-                surgery["date"],
-                surgery["time"],
-                surgery["duration"],
-                surgery["surgeon_name"],
-                surgery["patient_info"],
-                instruments_names,
-                instruments_durations,
-                surgery["clutch_count"],
-                1 if is_live else 0
+                surgery["procedure_name"], surgery["date"], surgery["time"], surgery["duration"],
+                surgery["surgeon_name"], surgery["patient_info"], instruments_names,
+                instruments_durations, surgery["clutch_count"], 1 if is_live else 0
             ))
             surgery_id = cursor.lastrowid
-            logger.info(f"➕ Inserted surgery ID={surgery_id}, is_live={is_live}, duration={surgery['duration']} min")
+            logger.info(f"Inserted {'live' if is_live else 'completed'} surgery {surgery_id}")
 
         await db.commit()
-        await db.close()
-        
-        logger.info(f"✅ Surgery saved successfully to database")
         return surgery_id
 
     except Exception as e:
-        logger.error(f"❌ Database error: {e}", exc_info=True)
-        await db.close()
+        logger.error(f"DB error: {e}", exc_info=True)
         return None
+    finally:
+        await db.close()
+
 
 async def mark_surgery_complete(surgery_id: int):
-    """Mark surgery as complete"""
     db = await get_db()
-    await db.execute("UPDATE surgeries SET is_live = 0 WHERE id = ?", (surgery_id,))
-    await db.commit()
-    await db.close()
-    logger.info(f"✅ Surgery {surgery_id} marked complete (is_live=0)")
+    try:
+        await db.execute("UPDATE surgeries SET is_live = 0 WHERE id = ?", (surgery_id,))
+        await db.commit()
+        logger.info(f"Marked surgery {surgery_id} as completed")
+    except Exception as e:
+        logger.error(f"Error marking complete: {e}")
+    finally:
+        await db.close()
 
-def archive_json_file(filepath: str, surgeon_name: str, procedure_name: str):
-    """Archive completed surgery JSON file"""
+
+def archive_and_clear_json(filepath: Path, surgeon_name: str, procedure_name: str):
     try:
         timestamp = datetime.now().strftime("%Y%m%d_%H%M%S")
-        surgeon_safe = surgeon_name.replace(" ", "_").replace(".", "")
-        procedure_safe = procedure_name.replace(" ", "_")
-        
-        archive_filename = f"{surgeon_safe}_{procedure_safe}_{timestamp}.json"
-        archive_path = ARCHIVE_FOLDER / archive_filename
-        
-        # Copy file to archive
+        safe_surgeon = surgeon_name.replace(" ", "_").replace(".", "")
+        safe_proc = procedure_name.replace(" ", "_").replace("/", "-")
+
+        archive_name = f"{safe_surgeon}_{safe_proc}_{timestamp}.json"
+        archive_path = ARCHIVE_FOLDER / archive_name
+
         shutil.copy2(filepath, archive_path)
-        logger.info(f"📦 Archived to: {archive_path}")
-        
-        # Clear the original file
-        with open(filepath, 'w') as f:
-            f.write('[]')
-        logger.info(f"🗑️  Cleared original file: {filepath}")
-        
+        logger.info(f"Archived → {archive_path}")
+
+        # Clear current file → ready for next surgery
+        with open(filepath, 'w', encoding='utf-8') as f:
+            json.dump([], f, indent=2)
+        logger.info(f"Cleared current_surgery.json")
+
     except Exception as e:
-        logger.error(f"❌ Error archiving file: {e}")
+        logger.error(f"Archive/clear error: {e}")
 
 # ========================================
 # FILE WATCHER
 # ========================================
 class SurgeryFileHandler(FileSystemEventHandler):
-    def __init__(self, loop):
+    def __init__(self, loop: asyncio.AbstractEventLoop):
         self.loop = loop
         self.last_modified = {}
-        self.surgeon_surgery_map = {}
+        self.surgeon_surgery_map: Dict[str, int] = {}  # surgeon → live surgery id
 
     def on_modified(self, event):
-        if event.is_directory:
+        if event.is_directory or not event.src_path.endswith('.json'):
             return
-        
-        if event.src_path.endswith('.json'):
-            current_time = datetime.now().timestamp()
-            if event.src_path in self.last_modified:
-                if current_time - self.last_modified[event.src_path] < 2:
-                    return
-            
-            self.last_modified[event.src_path] = current_time
-            logger.info(f"🔔 File modified: {event.src_path}")
-            
-            asyncio.run_coroutine_threadsafe(
-                self.process_file(event.src_path),
-                self.loop
-            )
 
-    async def process_file(self, filepath: str):
-        """Process JSON file with retry logic"""
-        max_retries = 3
-        retry_delay = 0.5
-        
+        now = datetime.now().timestamp()
+        path = event.src_path
+        if path in self.last_modified and now - self.last_modified[path] < 1.5:
+            return
+        self.last_modified[path] = now
+
+        logger.info(f"File changed: {path}")
+        asyncio.run_coroutine_threadsafe(self.process_file(path), self.loop)
+
+    async def process_file(self, filepath_str: str):
+        filepath = Path(filepath_str)
+        max_retries = 4
         for attempt in range(max_retries):
             try:
-                logger.info(f"📄 Processing: {filepath} (attempt {attempt + 1})")
-                
-                await asyncio.sleep(0.1)
-                
-                with open(filepath, 'r') as f:
-                    content = f.read()
-                    
-                if not content or content.strip() == '' or content.strip() == '[]':
-                    logger.warning(f"⚠️  File is empty, retrying...")
-                    if attempt < max_retries - 1:
-                        await asyncio.sleep(retry_delay)
-                        continue
-                    else:
-                        logger.error(f"❌ File still empty after {max_retries} attempts")
-                        return
-                
+                await asyncio.sleep(0.15)
+
+                with open(filepath, 'r', encoding='utf-8') as f:
+                    content = f.read().strip()
+
+                if not content or content == '[]':
+                    if attempt == max_retries - 1:
+                        logger.warning(f"File empty after retries: {filepath}")
+                    await asyncio.sleep(0.4)
+                    continue
+
                 data = json.loads(content)
-                
-                if not isinstance(data, list) or len(data) == 0:
-                    logger.warning(f"⚠️  Invalid data format, skipping")
+                if not isinstance(data, list) or not data:
+                    logger.warning("Invalid or empty event list")
                     return
-                
-                logger.info(f"📊 Loaded {len(data)} events from file")
-                
+
                 surgery = parse_surgery_json(data)
-                
-                if not surgery["procedure_name"] or not surgery["surgeon_name"]:
-                    logger.warning("⚠️  Missing procedure or surgeon name, skipping")
+                if not surgery["surgeon_name"] or not surgery["procedure_name"]:
+                    logger.warning("Missing surgeon or procedure – skipping")
                     return
 
-                surgeon_name = surgery["surgeon_name"]
-                
-                has_stop_event = any(e.get("event") == "Surgery stopped" for e in data if isinstance(e, dict))
-                is_complete = has_stop_event and surgery["duration"] > 0
-                
-                logger.info(f"🔍 Surgery: {surgery['procedure_name']} by {surgeon_name}")
-                logger.info(f"📊 Status: {'COMPLETE' if is_complete else 'LIVE'}, Duration: {surgery['duration']} min")
-                
+                surgeon = surgery["surgeon_name"]
+                is_complete = surgery["is_ended"] and surgery["duration"] > 0
+
+                logger.info(f"→ {surgeon} | {surgery['procedure_name']} | "
+                            f"{'COMPLETE' if is_complete else 'LIVE'} | "
+                            f"{surgery['duration']} min")
+
                 if is_complete:
-                    if surgeon_name in self.surgeon_surgery_map:
-                        await mark_surgery_complete(self.surgeon_surgery_map[surgeon_name])
-                        del self.surgeon_surgery_map[surgeon_name]
-                    
+                    # Complete surgery logic
+                    if surgeon in self.surgeon_surgery_map:
+                        old_id = self.surgeon_surgery_map[surgeon]
+                        await mark_surgery_complete(old_id)
+                        del self.surgeon_surgery_map[surgeon]
+
                     surgery_id = await save_surgery(surgery, is_live=False)
-                    logger.info(f"✅ Completed surgery saved: ID={surgery_id}, {surgery['procedure_name']} ({surgery['duration']} min)")
-                    
-                    # Archive the JSON file and clear it
-                    archive_json_file(filepath, surgeon_name, surgery["procedure_name"])
-                    
-                    await manager.broadcast({
-                        "type": "surgery_complete",
-                        "surgery": surgery,
-                        "surgeon_name": surgeon_name
-                    })
+                    if surgery_id:
+                        logger.info(f"Completed surgery saved → ID {surgery_id}")
+
+                        # Archive & clear file
+                        archive_and_clear_json(filepath, surgeon, surgery["procedure_name"])
+
+                        # Broadcast completion – frontend should KEEP showing this
+                        await manager.broadcast({
+                            "type": "surgery_complete",
+                            "surgery": surgery,
+                            "surgeon_name": surgeon,
+                            "surgery_id": surgery_id,
+                            "status": "completed"
+                        })
+
                 else:
+                    # Live update
                     surgery_id = await save_surgery(surgery, is_live=True)
-                    self.surgeon_surgery_map[surgeon_name] = surgery_id
-                    logger.info(f"🔴 LIVE surgery updated: ID={surgery_id}, {surgery['procedure_name']} - {surgery['duration']} min")
-                    
-                    await manager.broadcast({
-                        "type": "surgery_update",
-                        "surgery": surgery,
-                        "is_live": True,
-                        "surgeon_name": surgeon_name
-                    })
-                
-                break
-                
+                    if surgery_id:
+                        self.surgeon_surgery_map[surgeon] = surgery_id
+                        logger.info(f"Live update → ID {surgery_id}")
+
+                        await manager.broadcast({
+                            "type": "surgery_update",
+                            "surgery": surgery,
+                            "surgeon_name": surgeon,
+                            "surgery_id": surgery_id,
+                            "status": "live"
+                        })
+
+                break  # success
+
             except json.JSONDecodeError as e:
-                logger.warning(f"⚠️  JSON decode error (attempt {attempt + 1}): {e}")
+                logger.warning(f"JSON error (attempt {attempt+1}): {e}")
                 if attempt < max_retries - 1:
-                    await asyncio.sleep(retry_delay)
-                    continue
-                else:
-                    logger.error(f"❌ Failed to parse JSON after {max_retries} attempts")
-                    return
-                    
-            except FileNotFoundError:
-                logger.error(f"❌ File not found: {filepath}")
-                return
-                
+                    await asyncio.sleep(0.5)
             except Exception as e:
-                logger.error(f"❌ Error processing file: {e}", exc_info=True)
-                if attempt < max_retries - 1:
-                    await asyncio.sleep(retry_delay)
-                    continue
-                else:
-                    return
-
-observer = None
-
-def start_file_watcher(loop):
-    """Start file watcher"""
-    global observer
-    event_handler = SurgeryFileHandler(loop)
-    observer = Observer()
-    observer.schedule(event_handler, str(WATCH_FOLDER), recursive=False)
-    observer.start()
-    logger.info(f"👀 Watching: {WATCH_FOLDER}")
+                logger.error(f"Process error: {e}", exc_info=True)
+                break
 
 # ========================================
-# API ENDPOINTS
+# FILE WATCHER SETUP
+# ========================================
+observer: Observer | None = None
+
+def start_file_watcher(loop: asyncio.AbstractEventLoop):
+    global observer
+    handler = SurgeryFileHandler(loop)
+    observer = Observer()
+    observer.schedule(handler, str(WATCH_FOLDER), recursive=False)
+    observer.start()
+    logger.info(f"Started watching: {WATCH_FOLDER}")
+
+# ========================================
+# API ROUTES
 # ========================================
 @app.get("/surgeries/{surgeon_name}")
 async def get_surgeries_by_surgeon(surgeon_name: str):
-    """Get surgeries for specific surgeon"""
+    db = await get_db()
     try:
-        db = await get_db()
         cursor = await db.execute("""
             SELECT * FROM surgeries 
             WHERE surgeon_name = ?
             ORDER BY created_at DESC
+            LIMIT 50
         """, (surgeon_name,))
-        
         rows = await cursor.fetchall()
+
+        return [
+            {
+                "id": r[0], "procedure_name": r[1], "date": r[2], "time": r[3],
+                "duration": r[4], "surgeon_name": r[5], "patient_info": r[6],
+                "instruments_names": r[7], "instruments_durations": r[8],
+                "clutch_count": r[9], "created_at": r[10], "is_live": bool(r[11])
+            }
+            for r in rows
+        ]
+    except Exception as e:
+        logger.error(f"Query error: {e}")
+        return []
+    finally:
         await db.close()
 
-        surgeries = []
-        for row in rows:
-            surgeries.append({
-                "id": row[0],
-                "procedure_name": row[1],
-                "date": row[2],
-                "time": row[3],
-                "duration": row[4],
-                "surgeon_name": row[5],
-                "patient_info": row[6],
-                "instruments_names": row[7],
-                "instruments_durations": row[8],
-                "clutch_count": row[9],
-                "created_at": row[10],
-                "is_live": row[11]
-            })
-
-        logger.info(f"📤 Returning {len(surgeries)} surgeries for {surgeon_name}")
-        return surgeries
-
-    except Exception as e:
-        logger.error(f"Fetch error: {e}")
-        return []
 
 @app.get("/config")
 async def get_config():
-    """Get configuration"""
-    return {
-        "watch_folder": str(WATCH_FOLDER)
-    }
+    return {"watch_folder": str(WATCH_FOLDER)}
+
 
 @app.websocket("/ws")
 async def websocket_endpoint(websocket: WebSocket):
-    """WebSocket endpoint"""
     await manager.connect(websocket)
     try:
         while True:
-            await websocket.receive_text()
+            await websocket.receive_text()  # keep connection alive
     except WebSocketDisconnect:
         manager.disconnect(websocket)
 
 # ========================================
-# STARTUP/SHUTDOWN
+# LIFECYCLE
 # ========================================
 @app.on_event("startup")
 async def startup_event():
-    """Start file watcher"""
-    loop = asyncio.get_event_loop()
+    loop = asyncio.get_running_loop()
     threading.Thread(target=start_file_watcher, args=(loop,), daemon=True).start()
-    logger.info("🚀 Server started")
+    logger.info("Server startup complete")
+
 
 @app.on_event("shutdown")
 async def shutdown_event():
-    """Stop file watcher"""
     global observer
     if observer:
         observer.stop()
         observer.join()
-    logger.info("🛑 Server stopped")
+    logger.info("Server shutdown complete")
+
 
 if __name__ == "__main__":
     import uvicorn
-    uvicorn.run(app, host=HOST, port=PORT)
+    uvicorn.run(app, host=HOST, port=PORT, log_level="info")

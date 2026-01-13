@@ -174,6 +174,7 @@ def simulate_live_surgery():
         
         print(f"🔴 LIVE UPDATE: {current_minute}/{SURGERY_DURATION_MINUTES} min | Clutch: {clutch_count} | Instruments: {len(instruments_added)}")
     
+    # ────────────────────────────────────────────────
     # Surgery completion
     print(f"\n✅ Completing surgery...")
     end_time = start_time + timedelta(minutes=SURGERY_DURATION_MINUTES)
@@ -207,7 +208,14 @@ def simulate_live_surgery():
         "value": f"{hours}:{minutes:02d}:00"
     })
     
-    # Write final completed file
+    # ──── NEW: Final log line you requested ────────
+    events.append({
+        "time": end_time.isoformat(),           # or use datetime.now().isoformat() if you want current real time
+        "event": "Log file ended",
+        "value": "Now"
+    })
+    
+    # Write final completed file (with the new "Log file ended" entry)
     with open(OUTPUT_FILE, 'w') as f:
         json.dump(events, f, indent=2)
     
@@ -215,7 +223,6 @@ def simulate_live_surgery():
     print("🎉 SURGERY COMPLETED!")
     print("="*60)
     print(f"Total Events: {len(events)}")
-
     print(f"Clutch Presses: {clutch_count}")
     print(f"Instruments: {len(instruments_added)}")
     print(f"File: {OUTPUT_FILE}")
